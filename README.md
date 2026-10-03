@@ -4,7 +4,7 @@ The shared reader UI for the [Reader's Web](docs/readers-web.md). It displays HD
 
 It is used as a git submodule by:
 - **RW Reader**, the Chrome extension ([Chrome Web Store](https://chromewebstore.google.com/detail/visible-connections/hlckcdbgknflkkciojgdbhomdnegimbm)), at `extension/reader/`
-- **Reader's Web Publisher**, the WordPress plugin ([GitHub](https://github.com/kgcoder/static-web-publisher-plugin)), at `reader/`
+- **Reader's Web Publisher**, the WordPress plugin ([WordPress.org](https://wordpress.org/plugins/static-web-publisher/)), at `reader/`
 
 The reader is host-agnostic: plain ES modules with no build step and no dependencies to install. Everything host-specific (network proxying, settings storage, startup, DOM ids) goes through a host adapter, `g.hostAdapter`, which each host implements.
 
