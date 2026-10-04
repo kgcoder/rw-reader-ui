@@ -14,7 +14,8 @@ https://github.com/kgcoder/readers-web-specs
 
 import { kDefaultPadding, kLeftDivTop, kMiddleGap, kRightDivTopBarHeight, kRightDocsTabRowHeight } from "./PopupDocumentManager.js"
 import g from "./Globals.js"
-import { addScrollEndListener, addTransparencyToHexColor, escapeRegExp, getIndexAndLengthOfSelection, getPresentationDivFrom, getShortHash, getTextFromDiv, getTextNodesArrayFromDiv, isDotInsideFrame, isSubstringUniqueInText, removeAllChildren, showToastMessage, timestamp } from "./helpers.js";
+import { addScrollEndListener, addTransparencyToHexColor, getIndexAndLengthOfSelection, getPresentationDivFrom, getShortHash, getTextFromDiv, getTextNodesArrayFromDiv, isDotInsideFrame, isSubstringUniqueInText, removeAllChildren, showToastMessage, timestamp } from "./helpers.js";
+import { getIndicesForLinkInText, isTextEndIntact } from './textAnchors.js'
 import FloatingLink from "./models/FloatingLink.js";
 import CollageViewer from "./CollageViewer.js";
 import { loadStaticContentFromUrl } from "./parsers/ParsingManager.js";
@@ -1459,22 +1460,8 @@ setupFlinksCanvasDPR(){
                 flink.leftSideIsBroken = true
             }
 
-            if(!flink.leftSideIsBroken && !flink.leftEndOutOfBounds){
-                const text = leftText
-                const line = text.substring(leftEnd.hIndex,leftEnd.hIndex + leftEnd.hLength)
-    
-                const isUnique = isSubstringUniqueInText(line,text)
-                if (!isUnique) {
-                    flink.leftSideIsBroken = true
-                } else {
-                    const hash = getShortHash(line)
-
-                    if (leftEnd.hash !== hash) {
-                        flink.leftSideIsBroken = true
-                    }
-                    
-                }
-    
+            if(!flink.leftSideIsBroken && !flink.leftEndOutOfBounds && !isTextEndIntact(leftText, leftEnd)){
+                flink.leftSideIsBroken = true
             }
 
         }
@@ -1490,27 +1477,8 @@ setupFlinksCanvasDPR(){
                 flink.rightSideIsBroken = true
             }
 
-            if(!flink.rightSideIsBroken && !flink.rightEndOutOfBounds){
-
-
-                const text = rightText
-                const line = text.substring(rightEnd.hIndex,rightEnd.hIndex + rightEnd.hLength)
-    
-
-                const isUnique = isSubstringUniqueInText(line,text)
-                
-                if (!isUnique) {
-                    flink.rightSideIsBroken = true
-                } else {
-                    const hash = getShortHash(line)
-    
-                    if (rightEnd.hash !== hash) {
-                        flink.rightSideIsBroken = true
-                    }
-                    
-                }
-                
-    
+            if(!flink.rightSideIsBroken && !flink.rightEndOutOfBounds && !isTextEndIntact(rightText, rightEnd)){
+                flink.rightSideIsBroken = true
             }
         }
 
@@ -3043,53 +3011,7 @@ setupFlinksCanvasDPR(){
 
 
     getIndicesForLinkInText(text,originalStartIndex,originalHash,originalHIndex,originalHLength,leftHLetter,rightHLetter){
-        if (originalHLength.length > text.length) return null
-        if(!leftHLetter || !rightHLetter)return null
-
-        let newStartHIndex = 0
-
-        let hashSubstring = ''
-            
-        let newStartIndex = -1
-
-        let result;
-        const lengthWithin = originalHLength - 2
-        if(lengthWithin < 0)return null
-     
-        const reg = new RegExp(
-        `(?=(${escapeRegExp(leftHLetter)}[\\s\\S]{${lengthWithin}}${escapeRegExp(rightHLetter)}))`,
-        'g'
-        );
-
-        while ((result = reg.exec(text))) {
-            const matchedText = result[1] || ''
-
-            newStartHIndex = result.index
-
-            const newHash = getShortHash(matchedText)
-            
-            if (newHash === originalHash) {
-                newStartIndex = originalStartIndex - originalHIndex + newStartHIndex
-                hashSubstring = matchedText
-                break
-            }
-
-            reg.lastIndex = result.index + 1;
-            
-        }
-        
-        
-        if(newStartIndex === -1)return null
-
-        if(!hashSubstring)return null
-
-        if (!isSubstringUniqueInText(hashSubstring, text)) {
-            return null
-        }
-
-        return {newStartIndex, newStartHIndex}
-
-     
+        return getIndicesForLinkInText(text,originalStartIndex,originalHash,originalHIndex,originalHLength,leftHLetter,rightHLetter)
     }
 
     async deleteOneFlink(flink){

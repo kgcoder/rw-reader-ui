@@ -13,9 +13,13 @@ https://github.com/kgcoder/readers-web-specs
 */
 
 import g from "./Globals.js"
-import SHA256 from './hashing/sha256-es/src/sha256.js'
 import DOMPurify from './dompurify/purify.es.mjs';
+import { getTextNodesArrayFromDiv } from './textAnchors.js'
 import FloatingLink from "./models/FloatingLink.js";
+
+// Moved to textAnchors.js (which doesn't depend on the reader's global state); re-exported so that
+// existing imports keep working.
+export { base64Decode, base64Encode, escapeRegExp, getShortHash, getTextFromDiv, getTextNodesArrayFromDiv, isSubstringUniqueInText, removeTitleFromContent, sanitizeHtml } from './textAnchors.js'
 
 export function timestamp() {
     return window.performance && window.performance.now
@@ -89,8 +93,6 @@ export function createOneSVGIconComponent(parent,svgString,componentId,className
 }
 
 
-
-
 export function getFirstElementOfArray(array) {
     if (array && array.length) {
         return array[0]
@@ -116,9 +118,6 @@ export function escapeXml(str) {
             .replace(/'/g, "&apos;");
 }
 
-export function escapeRegExp(string) {
-    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // Escapes special characters
-}
 
 export function escapeHTML(html){
     return html
@@ -385,7 +384,6 @@ export function isoToHumanReadableDate(isoString, onlyDate = false) {
 }
 
 
-
 export function formatFileSize(bytes, useBinary = false) {
     const binaryUnits = ['bytes', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB'];
     const decimalUnits = ['bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
@@ -437,73 +435,6 @@ export function getDesiredConnectionsFromHdocDataJson(dataJSON) {
 }
 
 
-export function sanitizeHtml(htmlString, additionalForbiddenTags = []) {
-    
-    const htmlParser = new DOMParser();
-
-    const htmlDoc = htmlParser.parseFromString(htmlString, 'text/html');
-
-
-    htmlDoc.querySelectorAll('[style]').forEach(el => {
-        el.removeAttribute('style');
-    });
-
-    htmlDoc.querySelectorAll('font[size]').forEach(el => {
-        el.removeAttribute('size');
-    });
-
-    htmlDoc.querySelectorAll("img.lazyload").forEach(img => {
-    const realSrc = img.getAttribute("data-src") || img.getAttribute("data-lazy");
-    if (realSrc) {
-      img.setAttribute("src", realSrc);
-    }
-    img.classList.remove("lazyload");
-  });
-
-
-    const forbiddenTags = ["script", "object", "embed", "link", "style", "meta", "form", "base", "head",
-        "webview", "button", "input", "textarea", "select", "option", "optgroup", "label", "fieldset", "legend", "datalist", ".hdoc-remove", ...additionalForbiddenTags];
-    
-    forbiddenTags.forEach(tag => {
-        try{
-            htmlDoc.querySelectorAll(tag).forEach(el => el.remove());
-        }catch(e){
-            //invalid selector
-        }
-    });
-
-    htmlDoc.querySelectorAll("*").forEach(el => {
-        [...el.attributes].forEach(attr => {
-            if (attr.name.startsWith("on") || attr.value.trim().toLowerCase().startsWith("javascript:")) {
-                el.removeAttribute(attr.name);
-            }
-        });
-    });
-
-    let sanitizedHtml = htmlDoc.body.innerHTML
-    sanitizedHtml = sanitizedHtml.replace(/<iframe([^<]*?)\/>/gim,'<iframe$1></iframe>')
-
-
-    const allowedTags = ['a', 'abbr', 'acronym', 'address', 'area', 'article', 'aside', 'audio', 'b', 'bdi', 'bdo', 'big', 'blink', 'blockquote', 'body', 'br', 'button', 'canvas', 'caption', 'center', 'cite', 'code', 'col', 'colgroup', 'content', 'data', 'datalist', 'dd', 'decorator', 'del', 'details', 'dfn', 'dialog', 'dir', 'div', 'dl', 'dt', 'element', 'em', 'fieldset', 'figcaption', 'figure', 'font', 'footer', 'form', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'head', 'header', 'hgroup', 'hr', 'html', 'i', 'img', 'input', 'ins', 'kbd', 'label', 'legend', 'li', 'main', 'map', 'mark', 'marquee', 'menu', 'menuitem', 'meter', 'nav', 'nobr', 'ol', 'optgroup', 'option', 'output', 'p', 'picture', 'pre', 'progress', 'q', 'rp', 'rt', 'ruby', 's', 'samp', 'search', 'section', 'select', 'shadow', 'slot', 'small', 'source', 'spacer', 'span', 'strike', 'strong', 'style', 'sub', 'summary', 'sup', 'table', 'tbody', 'td', 'template', 'textarea', 'tfoot', 'th', 'thead', 'time', 'tr', 'track', 'tt', 'u', 'ul', 'var', 'video', 'wbr'];
-
-    const purifiedHtml = DOMPurify.sanitize(sanitizedHtml,{
-        ALLOWED_TAGS: allowedTags,   // allow all tags (except obviously unsafe ones)
-        ALLOWED_ATTR: false,   // allow all safe attributes
-        ADD_TAGS: ['iframe'],  // explicitly allow <iframe>
-        ADD_ATTR: ['target','allow', 'allowfullscreen', 'frameborder', 'src', 'height', 'width', 'referrerpolicy', 'loading', 'href', 'class', 'id'],
-    });
-
-
-
-    return purifiedHtml != null ? purifiedHtml : ''
-
-
-
-
-
-
-}
-
 //Enforces the CDOC static dialect: geometry, text, images and links only.
 //No scripts, event handlers, animation, filters, style sheets/attributes, foreignObject or use/symbol/defs.
 export function sanitizeCdocSvg(svgString) {
@@ -523,26 +454,6 @@ export function sanitizeCdocSvg(svgString) {
     return sanitized != null ? sanitized : ''
 }
 
-export function removeTitleFromContent(htmlString, titleText, titleSelector) {
-
-    const htmlParser = new DOMParser();
-
-    const htmlDoc = htmlParser.parseFromString(htmlString, 'text/html');
-
-    try{
-        const titleEl = htmlDoc.querySelector(titleSelector != null ? titleSelector : 'h1')
-        if (titleEl && titleEl.textContent.trim() === titleText.trim()) {
-            titleEl.parentElement.removeChild(titleEl)  
-        }
-     }catch(e){
-        //invalid selector (shouldn't get here)
-    }
-
-    return htmlDoc.body.innerHTML
-
-}
-
-
 
 export function getH1TitleFromDoc(htmlDoc, titleSelector) {
 
@@ -560,11 +471,6 @@ export function getH1TitleFromDoc(htmlDoc, titleSelector) {
 
 }
 
-
-export function getShortHash(string,length = 6){
-    const longHash =  SHA256.hash(string)
-    return longHash.substring(0,length)
-}
 
 export function isDotInsideFrame(x,y,frame){
     const {minX,minY,maxX,maxY} = frame
@@ -584,22 +490,6 @@ export function hideUrlInTheCorner(){
 
 }
 
-
-export function base64Encode(str) {
-  // Convert to UTF-8 bytes
-  const bytes = new TextEncoder().encode(str);
-  // Convert bytes → binary string → base64
-  const binary = Array.from(bytes, b => String.fromCharCode(b)).join('');
-  return btoa(binary);
-}
-
-export function base64Decode(base64) {
-  // Decode base64 → binary string
-  const binary = atob(base64);
-  // Convert binary string → bytes → UTF-8 text
-  const bytes = Uint8Array.from(binary, ch => ch.charCodeAt(0));
-  return new TextDecoder().decode(bytes);
-}
 
 export function roundValueForSVG(value){
     return Math.round(value * 1000) / 1000
@@ -627,50 +517,6 @@ export function addTransparencyToHexColor(color, alpha) {
     
     return rgbaColor;
 }
-
-
-
-export function getTextNodesArrayFromDiv(div){
-    const textNodesArray = []
-
-    const getTextNodesArray = (node) => {
-        if (node.nodeType === 3) { 
-            textNodesArray.push(node)
-        }
-        if (node = node.firstChild) do {
-            getTextNodesArray(node);
-        } while (node = node.nextSibling);
-    }
-    getTextNodesArray(div)
-
-    return textNodesArray
-}
-
-
-export function getTextFromDiv(div){
-    const textNodesArray = getTextNodesArrayFromDiv(div)
-   // 
-    return textNodesArray.map(node => node.data).join('')
-}
-
-
-export function isSubstringUniqueInText(substring,text){
-
-    if (typeof substring !== "string" || typeof text !== "string") {
-        throw new Error("Both substring and text must be strings");
-    }
-
-    if (substring === "") return false; // Edge case: Empty substring
-
-
-    const first = text.indexOf(substring);
-    if (first === -1) return false; // doesn't occur at all (shouldn't happen in practice)
-
-    const last = text.lastIndexOf(substring);
-    return first === last; // only one occurrence
-
-}
-
 
 
 export function interpolate(startX, endX = 0, startY, endY, currentX, totalDiffX = 0, easing = 'linear') {
@@ -704,7 +550,6 @@ export function getHeaderDivFrom(div){
 export function getPresentationDivFrom(div) {
     return div.querySelector('.PresentationDiv')
 }
-
 
 
 export function getConnectionsJSON() {
@@ -782,8 +627,6 @@ export function getConnectionsString(){
 
         const textNode = xmlDoc.createTextNode('\n' + flinkLines.join('\n') + '\n');
         flinksetEl.appendChild(textNode)
-
-
 
 
     
@@ -883,7 +726,6 @@ export function getDataFromCondocXML(condocXML) {
     if (descriptionEl) {
         condocDescription = stripHtmlTags(descriptionEl.textContent)
     }
-
 
 
     return {condocTitle, condocDescription, mainPageUrl}

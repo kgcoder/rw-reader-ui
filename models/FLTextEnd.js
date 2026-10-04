@@ -12,7 +12,7 @@ For the official list of document types and specifications, see:
 https://github.com/kgcoder/readers-web-specs
 */
 
-import { base64Decode, base64Encode } from "../helpers.js"
+import { base64Decode, base64Encode } from "../textAnchors.js"
 
 class FLTextEnd {
 
