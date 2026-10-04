@@ -660,11 +660,18 @@ class PopupDocumentManager{
                 showToastMessage('Wrong format of the embedded document')
                 return
             }
+            let mainDocTitle = ''
             if (embeddedDataObject.docType === 'h') {
                 this.loadDocument(embeddedDataObject, true)
+                const parsedHdoc = g.noteDivsManager.parseContentOfHdoc(embeddedDataObject.xmlString)
+                mainDocTitle = parsedHdoc ? parsedHdoc.title : ''
             } else if (embeddedDataObject.docType === 'c') {
                 this.loadCollage(embeddedDataObject, true)
-            } 
+                mainDocTitle = embeddedDataObject.title
+            }
+
+            // the browser tab shows the main document's <metadata><title>, not the CONDOC's
+            if (mainDocTitle) document.title = mainDocTitle
 
             if(successCallback)successCallback()
         } else {

@@ -16,7 +16,9 @@ import { escapeXml, getBaseFromHtmlDoc, getBaseOuterXML, getXMlAndDataArrayFromJ
 import { getXMLFromHeaderInfo } from "../HeaderMethods.js"
 
 
-export function parseHtmlPageWithEmbeddedHDoc(httpPageUrl, contentString, hdocDataJSON) {
+// pageInfo = {title, base}, taken from the <head> of the page the HDOC is embedded in
+// (see getHdocJsonAndContentFromDocument). If it's missing, the current page is assumed.
+export function parseHtmlPageWithEmbeddedHDoc(httpPageUrl, contentString, hdocDataJSON, pageInfo) {
     const match = httpPageUrl.match(/(https?):\/\/(([^/]*)\/?.*?)$/i)
     if (!match) {
         showToastMessage('Parsing error')
@@ -26,15 +28,13 @@ export function parseHtmlPageWithEmbeddedHDoc(httpPageUrl, contentString, hdocDa
     const protocol = match[1]
     const domain = match[3]
 
- 
+
     let additionalForbiddenTags = []
 
-    
-    const unsanitizedHtmlParser = new DOMParser();
-    const unsanitizedHtmlDoc = unsanitizedHtmlParser.parseFromString(contentString, 'text/html');
+    const pageTitle = pageInfo ? (pageInfo.title || '') : document.title
+    const base = pageInfo ? pageInfo.base : getBaseFromHtmlDoc(document)
 
 
-    
     const panelsJSON = hdocDataJSON.panels
 
     let panelsString = ''
@@ -270,15 +270,13 @@ export function parseHtmlPageWithEmbeddedHDoc(httpPageUrl, contentString, hdocDa
     if (headerInfo.publicationDate) headerInfo.publicationDate = stripHtmlTags(headerInfo.publicationDate)
 
 
-    const base = getBaseFromHtmlDoc(unsanitizedHtmlDoc)
-
     if (!connectionsString) connectionsString = '\n\n'
 
     const lang = hdocDataJSON.lang
     const hdocOpenTag = lang ? `<hdoc lang="${escapeXml(lang)}">` : `<hdoc>`
     const republishingPolicy = hdocDataJSON["republishing-policy"]
     const republishingPolicyString = republishingPolicy ? `<republishing-policy>${escapeXml(republishingPolicy)}</republishing-policy>\n` : ''
-    const xmlString = `${hdocOpenTag}\n\n<metadata>\n<title>${escapeXml(document.title)}</title>\n${republishingPolicyString}${getBaseOuterXML(base)}</metadata>${panelsString}${headerString}<content>${content}</content>${connectionsString}</hdoc>`
+    const xmlString = `${hdocOpenTag}\n\n<metadata>\n<title>${escapeXml(pageTitle)}</title>\n${republishingPolicyString}${getBaseOuterXML(base)}</metadata>${panelsString}${headerString}<content>${content}</content>${connectionsString}</hdoc>`
 
     const dataObject = {html:content,headerInfo:headerInfo,base,xmlString,connectedDocsData,type:'text',docType:'h',url:httpPageUrl,docSubtype:2}
 
@@ -335,5 +333,5 @@ function getHdocJsonAndContentFromDocument(doc) {
         existingFlinkCanvases[0].remove();  // Remove the first element repeatedly until none are left
     }
 
-    return {hdocDataJSON, content:contentEl.innerHTML}
+    return {hdocDataJSON, content:contentEl.innerHTML, title:doc.title || '', base:getBaseFromHtmlDoc(doc)}
 }

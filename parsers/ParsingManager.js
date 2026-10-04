@@ -159,8 +159,8 @@ export async function parseStaticContent(contentString, originalUrl, savedParsin
         
         const dataFromEmbeddedHDOC = getHdocJsonAndContentFromHtml(contentString)
         if (dataFromEmbeddedHDOC) {
-            const {hdocDataJSON,content} = dataFromEmbeddedHDOC
-            const dataObject = parseHtmlPageWithEmbeddedHDoc(originalUrl, content, hdocDataJSON)  
+            const {hdocDataJSON,content,title,base} = dataFromEmbeddedHDOC
+            const dataObject = parseHtmlPageWithEmbeddedHDoc(originalUrl, content, hdocDataJSON, {title, base})
             return {dataObject, error:!dataObject ? 'Something is wrong with the embedded HDOC' : null}          
         }
 

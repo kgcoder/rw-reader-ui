@@ -30,7 +30,7 @@ Nothing in the reader reads `g.hostAdapter` at module-evaluation time, so a plai
 | Export | Module | Purpose |
 |--------|--------|---------|
 | `parseStaticContent(contentString, url, savedParsingRules?)` | `parsers/ParsingManager.js` | Detects the document type and parses it. Resolves `{dataObject, error}`; `dataObject.docType` is `'h'` (hdoc), `'c'` (cdoc) or `'condoc'`. |
-| `getHdocJsonAndContentFromCurrentDocument()` / `parseHtmlPageWithEmbeddedHDoc(url, content, hdocDataJSON)` | `parsers/EmbHDOCParser.js` | Parse an embedded HDOC from the current page's own DOM (used by the plugin). |
+| `getHdocJsonAndContentFromCurrentDocument()` / `parseHtmlPageWithEmbeddedHDoc(url, content, hdocDataJSON, {title, base})` | `parsers/EmbHDOCParser.js` | Parse an embedded HDOC from the current page's own DOM (used by the plugin). The first returns `{hdocDataJSON, content, title, base}`; pass `title` and `base` on as the 4th argument (if omitted, the current page's are used). |
 | `loadUIAndIcons()` | `readerStartUp.js` | Binds the flinks canvas, loads icons, builds the UI and installs the keyboard handler. Requires the reader DOM to exist. |
 | `applyAllSavedSettings()` | `readerStartUp.js` | Restores theme, font size, font set and favorites via `getSetting`. Call it after `loadUIAndIcons()` and before loading a document. |
 | `addListenersToContainer(container)` | `readerStartUp.js` | Adds the horizontal scroll-snap behaviour (mobile two-pane layout) to the scrolling container. |
