@@ -2757,7 +2757,15 @@ class PopupDocumentManager{
             return
         }
 
-        const parsedResponse = JSON.parse(text)
+        let parsedResponse
+
+        try{
+            parsedResponse = JSON.parse(text)
+
+        }catch(e){
+            showToastMessage('Something went wrong')
+            return
+        }
 
         if (!parsedResponse || !Array.isArray(parsedResponse.comments)) {
             showToastMessage('Something went wrong')
