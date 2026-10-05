@@ -589,7 +589,16 @@ export function getConnectionsJSON() {
 
     const finalObject = {connections:docsArray}
     
-    return JSON.stringify(finalObject,null,4)
+    const fullJSON = JSON.stringify(finalObject,null,4)
+
+
+    const trimmedJSON = fullJSON
+        .split('\n')
+        .slice(1, -1)
+        .map(line => line.replace(/^ {4}/, ''))
+        .join('\n')
+
+    return trimmedJSON
 }
 
 
@@ -605,6 +614,7 @@ export function getConnectionsString(){
     
         const flinksetEl = xmlDoc.createElement('doc')
 
+        xmlDoc.documentElement.appendChild(xmlDoc.createTextNode('\n'))
         xmlDoc.documentElement.appendChild(flinksetEl)
 
         if(flinkSet.url){
@@ -629,8 +639,10 @@ export function getConnectionsString(){
         flinksetEl.appendChild(textNode)
 
 
-    
+
     }
+
+    xmlDoc.documentElement.appendChild(xmlDoc.createTextNode('\n'))
 
     const xmlSerializer = new XMLSerializer();
 
